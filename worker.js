@@ -129,7 +129,7 @@ let throng = require('throng');
 let Queue = require("bull");
 let REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 let workers = process.env.WEB_CONCURRENCY || 2;
-let maxJobsPerWorker = 50;
+let maxJobsPerWorker = 2;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -137,18 +137,16 @@ function sleep(ms) {
 
 function start() {
   // Connect to the named work queue
-  let workQueue = new Queue('work', REDIS_URL);
+  let workQueue = new Queue('work', {
+    redis: REDIS_URL,
+    limiter: {
+        max:2,
+        duration: 300000
+    }
+  });
 
   workQueue.process(maxJobsPerWorker, async (job) => {
-    // This is an example job that just slowly reports on progress
-    // while doing no work. Replace this with your own job logic.
-    let progress = 0;
-
-    runSchedule();
-
-    // A job can return values that will be stored in Redis as JSON
-    // This return value is unused in this demo application.
-    // return { value: "This will be stored" };
+    runSchedule(job);
   });
 }
 
@@ -156,7 +154,7 @@ function start() {
 // See: https://devcenter.heroku.com/articles/node-concurrency for more info
 throng({ workers, start });
 
-function runSchedule(){
+function runSchedule(job){
     console.log('runSchedule()')
     let sample = require('./sample.json')
     
@@ -173,10 +171,10 @@ function runSchedule(){
         },
         cookies: JSON.parse(sample.cookies)
     }
-    asyncBlast(param.data, param.cookies);
+    asyncBlast(param.data, param.cookies, job);
 }
 
-async function asyncBlast(body, cookies){
+async function asyncBlast(body, cookies, job){
     console.log('=======asyncBlast()===============')
     var notifications = body.notifications
     var data = {
@@ -202,10 +200,16 @@ async function asyncBlast(body, cookies){
         for(var x = startArray; x < arrChunk[i].length; x++){
         console.log('chunk ', (i)*chunkSize)
         console.log('index' , x);
+        console.log('job', job.id)
+        console.log(job.id)
             if (arrChunk[i][x] !== undefined) {
                 await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
             }
         }
+        // if (x == 5) {
+        //   console.log('job done')
+        //   done();
+        // }
         startArray = 0;
     }
 }
@@ -221,7 +225,7 @@ function getUserAsync(data, notification, cookies, index){
   // winstonLog('info','getUserAsync()','get sunco conversation', `get conversation by userExternalId : ${notification.user.id}`, {prop: data, notification: notification, cookies: cookies, index: `${index} of ${data.user_count}`})
 
   return apiInstance.listConversations(cookies.app_id, filter, opts).then(function(list) {
-    console.log('get conversations: ' + JSON.stringify(list))
+    // console.log('get conversations: ' + JSON.stringify(list))
     // winstonLog('info','getUserAsync()','get sunco conversation api', `get conversation by API success`, list)
 
     if(list.conversations.length<1){
