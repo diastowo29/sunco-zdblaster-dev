@@ -194,22 +194,16 @@ async function asyncBlast(body, cookies, job){
     var arrChunk = chunk(notifications, chunkSize) //DF --- dibagi per 50 array
 
     let startChunk = 0; // DF --- in case ada problem tengah jalan
-    let startArray = 0; //DF --- in case ada problem tengah jalan
+    let startArray = 0; // DF --- in case ada problem tengah jalan
 
     for (let i = startChunk; i < arrChunk.length; i++) {
         for(var x = startArray; x < arrChunk[i].length; x++){
         console.log('chunk ', (i)*chunkSize)
         console.log('index' , x);
-        console.log('job', job.id)
-        console.log(job.id)
             if (arrChunk[i][x] !== undefined) {
                 await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
             }
         }
-        // if (x == 5) {
-        //   console.log('job done')
-        //   done();
-        // }
         startArray = 0;
     }
 }
