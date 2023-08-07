@@ -10,6 +10,7 @@ var clientApiInstance = new SunshineConversationsClient.ClientsApi()
 var userApiInstance = new SunshineConversationsClient.UsersApi()
 var userCreateBody = new SunshineConversationsClient.UserCreateBody()
 var messageApiInstance = new SunshineConversationsClient.MessagesApi()
+const { memoryUsage } = require('node:process');
 
 
 var chunk = require('chunk')
@@ -137,12 +138,12 @@ function sleep(ms) {
 
 function start() {
   // Connect to the named work queue
-  let workQueue = new Queue('work', {
-    redis: REDIS_URL,
+  let workQueue = new Queue('blast', {
+    redis: REDIS_URL/* ,
     limiter: {
         max:2,
         duration: 300000
-    }
+    } */
   });
 
   workQueue.process(maxJobsPerWorker, async (job) => {
@@ -156,6 +157,8 @@ throng({ workers, start });
 
 function runSchedule(job){
     console.log('runSchedule()')
+    console.log(job)
+    done();
     let sample = require('./sample.json')
     
     var param = {
@@ -171,7 +174,7 @@ function runSchedule(job){
         },
         cookies: JSON.parse(sample.cookies)
     }
-    asyncBlast(param.data, param.cookies, job);
+    // asyncBlast(param.data, param.cookies, job);
 }
 
 async function asyncBlast(body, cookies, job){
@@ -200,6 +203,8 @@ async function asyncBlast(body, cookies, job){
         for(var x = startArray; x < arrChunk[i].length; x++){
         console.log('chunk ', (i)*chunkSize)
         console.log('index' , x);
+        console.log('job', job.id)
+        console.log(memoryUsage())
             if (arrChunk[i][x] !== undefined) {
                 await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
             }
@@ -230,14 +235,14 @@ function getUserAsync(data, notification, cookies, index){
           subscribeSDKClient: false
         }]
       }
-    //   return createConversationAsync(data, notification, cookies, createConvParam)
+      return createConversationAsync(data, notification, cookies, createConvParam)
     } else {
     //   return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
     }
   }, function(error) {
     console.error('get conversations error', JSON.stringify(error))
     // winstonLog('error','getUserAsync()','get sunco conversation api', `get conversation by API failed`, error)
-    // return createWaUserAsync(data, notification, cookies)
+    return createWaUserAsync(data, notification, cookies)
   })
 }
 
@@ -416,12 +421,12 @@ function removeUserAsync(data, notification, cookies){
   userApiInstance.deleteUser(appId, userIdOrExternalId).then(function(del) {
     console.log('delete user API called successfully.')
     // winstonLog('info','removeUserAsync()','delete sunco user api', `remove sunco user success`, del)
-    createWaUserAsync(data, notification,cookies)
+    // createWaUserAsync(data, notification,cookies)
   }, function(error) {
     console.error('remove user error', JSON.stringify(error))
     // winstonLog('error','removeUserAsync()','delete sunco user api', `remove sunco failed`, error)
     // if(data.hasOwnProperty('row_id')) jobIncrement(data.row_id)
-    createHistory(rowHistory(data.transaction_id, notification,null,false,'re-creating user failed'))
+    // createHistory(rowHistory(data.transaction_id, notification,null,false,'re-creating user failed'))
   })
 }
 
