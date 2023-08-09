@@ -7,12 +7,12 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
-// const db = require("./models");
-// db.sequelize.sync().then(() => {
-//   console.log("Synced db.");
-// }).catch((err) => {
-//   console.log("Failed to sync db: " + err.message);
-// });
+const db = require("./models");
+db.sequelize.sync().then(() => {
+  console.log("Synced db.");
+}).catch((err) => {
+  console.log("Failed to sync db: " + err.message);
+});
 
 var app = express();
 

@@ -5,7 +5,14 @@ const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
   host: dbConfig.HOST,
   dialect: dbConfig.dialect,
   operatorsAliases: false,
-
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+      },
+      keepAlive: true,
+  },      
+  ssl: true,
   pool: {
     max: dbConfig.pool.max,
     min: dbConfig.pool.min,
@@ -21,5 +28,6 @@ db.sequelize = sequelize;
 
 db.histories = require("./mb_histories")(sequelize, Sequelize);
 db.templates = require("./mb_templates")(sequelize, Sequelize);
+db.job = require("./mb_job_schedules")(sequelize, Sequelize);
 
 module.exports = db;
