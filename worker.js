@@ -42,6 +42,7 @@ function start() {
   });
 
   workQueue.process(maxJobsPerWorker, async (job) => {
+    console.log('get new job')
     runSchedule(job);
   });
 }
