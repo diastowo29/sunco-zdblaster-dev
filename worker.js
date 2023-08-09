@@ -110,9 +110,10 @@ async function asyncBlast(body, cookies, job){
         console.log('index' , x);
         console.log((memoryUsage().heapUsed)/1024/1024)
             if (arrChunk[i][x] !== undefined) {
-              if (excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
-                console.log('number exist', arrChunk[i][x].metadata.user_phone)
-              } else {
+              if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
+                if (x == 3) {
+                  throw new Error('done')
+                }
                 await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
               }
             }
@@ -137,13 +138,13 @@ function getUserAsync(data, notification, cookies, index){
           subscribeSDKClient: false
         }]
       }
-      // return createConversationAsync(data, notification, cookies, createConvParam)
+      return createConversationAsync(data, notification, cookies, createConvParam)
     } else {
-      // return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
+      return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
     }
   }, function(error) {
     console.error('get conversations error', JSON.stringify(error))
-    // return createWaUserAsync(data, notification, cookies)
+    return createWaUserAsync(data, notification, cookies)
   })
 }
 
@@ -231,7 +232,7 @@ function createClientAsync(data, notification, cookies, param){
 
 function postMessageAsync(data, notification, cookies, conversationId, retryTime){
     console.log('postMessageAsync()');
-  /* console.log('postMessageAsync()',retryTime)
+  console.log('postMessageAsync()',retryTime)
   var appId = cookies.app_id
   console.log('message param', JSON.stringify(notification.message_data))
 
@@ -253,11 +254,11 @@ function postMessageAsync(data, notification, cookies, conversationId, retryTime
         createHistory(rowHistory(data.transaction_id, notification,null,false,'sunco client has not active'))
       }
     }
-  }) */
+  })
 }
 
 function createHistory(param){
-  history.create(param).then(result => {
+  History.create(param).then(result => {
     console.log('createRowHistoryTable',JSON.stringify(result))
   }).catch(err =>{
     console.log('create history data error', JSON.stringify(err))
