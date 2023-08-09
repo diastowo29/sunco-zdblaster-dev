@@ -111,8 +111,8 @@ async function asyncBlast(body, cookies, job){
         console.log('index' , x);
         console.log((memoryUsage().heapUsed)/1024/1024)
             if (arrChunk[i][x] !== undefined) {
-              if (excludeNumber.includes(arrChunk[i][x].user.phone_number)) {
-                console.log('number exist', arrChunk[i][x].user.phone_number)
+              if (excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
+                console.log('number exist', arrChunk[i][x].metadata.user_phone)
               } else {
                 await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
               }
