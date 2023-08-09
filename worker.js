@@ -111,6 +111,7 @@ async function asyncBlast(body, cookies, job){
         console.log((memoryUsage().heapUsed)/1024/1024)
             if (arrChunk[i][x] !== undefined) {
               if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
+                // console.log(JSON.stringify(data))
                 await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
               }
             }
@@ -232,6 +233,7 @@ function postMessageAsync(data, notification, cookies, conversationId, retryTime
   console.log('postMessageAsync()',retryTime)
   var appId = cookies.app_id
   // console.log('message param', JSON.stringify(notification.message_data))
+  // console.log(rowHistory(data.transaction_id, notification,message.messages[0].id,true,null))
 
   messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
     console.log('=== messagePosted ===',JSON.stringify(message))
@@ -314,17 +316,17 @@ function rowHistory(transactionId, notification, messageId, isSuccess, failDetai
   var row
   if(isSuccess) {
     row = {
-      transaction_id: transactionId,
-      end_user_name: notification.metadata.user_name,
-      phone_number: notification.metadata.user_phone,
-      message_id : messageId,
+      transactionId: transactionId,
+      endUserName: notification.metadata.user_name,
+      phoneNumber: notification.metadata.user_phone,
+      messageId : messageId,
       status: 'SENT'
     }
   }else{
     row = {
-      transaction_id: transactionId,
-      end_user_name: notification.metadata.user_name,
-      phone_number: notification.metadata.user_phone,
+      transactionId: transactionId,
+      endUserName: notification.metadata.user_name,
+      phoneNumber: notification.metadata.user_phone,
       status: 'UNSENT',
       detail: failDetail
     }
