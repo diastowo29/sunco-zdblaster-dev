@@ -231,9 +231,9 @@ function postMessageAsync(data, notification, cookies, conversationId, retryTime
     console.log('postMessageAsync()');
   console.log('postMessageAsync()',retryTime)
   var appId = cookies.app_id
-  console.log('message param', JSON.stringify(notification.message_data))
+  // console.log('message param', JSON.stringify(notification.message_data))
 
-  messageApiInstance.postMessage(appId, conversationId, notification.message_data).then(function(message) {
+  messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
     console.log('=== messagePosted ===',JSON.stringify(message))
     createHistory(rowHistory(data.transaction_id, notification,message.messages[0].id,true,null))
   }, function(err) {
