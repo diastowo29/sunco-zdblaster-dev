@@ -41,6 +41,7 @@ function start() {
 
   workQueue.process(maxJobsPerWorker, async (job) => {
     console.log('get new job')
+    excludeNumber = [];
     runSchedule(job);
   });
 }
