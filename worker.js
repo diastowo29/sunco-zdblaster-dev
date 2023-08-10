@@ -66,6 +66,7 @@ function runSchedule(jobQueue){
           transactionId: jobQueue.data.transaction
         }
       }).then(function(job) {
+        var testvar = job[0].id
         var param = {
             data:{
                 row_id: job[0].id,
@@ -79,13 +80,13 @@ function runSchedule(jobQueue){
             },
             cookies: JSON.parse(job[0].cookies)
         }
-        asyncBlast(param.data, param.cookies, jobQueue);
+        asyncBlast(param.data, param.cookies, jobQueue, testvar);
       })
     })
     
 }
 
-async function asyncBlast(body, cookies, job){
+async function asyncBlast(body, cookies, job, testvar){
     console.log('=======asyncBlast()===============')
     var notifications = body.notifications
     var data = {
@@ -106,18 +107,19 @@ async function asyncBlast(body, cookies, job){
     let startArray = 0; // DF --- in case ada problem tengah jalan
 
     for (let i = startChunk; i < arrChunk.length; i++) {
-        for(var x = startArray; x < arrChunk[i].length; x++){
-        console.log('chunk ', (i)*chunkSize)
-        console.log('index' , x);
-        console.log((memoryUsage().heapUsed)/1024/1024)
-            if (arrChunk[i][x] !== undefined) {
-              if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
-                // console.log(JSON.stringify(data))
-                await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
-              }
-            }
+      for(var x = startArray; x < arrChunk[i].length; x++){
+      console.log('chunk ', (i)*chunkSize)
+      console.log('index' , x);
+      console.log((memoryUsage().heapUsed)/1024/1024);
+      console.log('row job', testvar);
+        if (arrChunk[i][x] !== undefined) {
+          // if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
+            // console.log(JSON.stringify(data))
+            await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
+          // }
         }
-        startArray = 0;
+      }
+      startArray = 0;
     }
 }
 
@@ -137,13 +139,13 @@ function getUserAsync(data, notification, cookies, index){
           subscribeSDKClient: false
         }]
       }
-      return createConversationAsync(data, notification, cookies, createConvParam)
+      // return createConversationAsync(data, notification, cookies, createConvParam)
     } else {
-      return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
+      // return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
     }
   }, function(error) {
     console.error('get conversations error', JSON.stringify(error))
-    return createWaUserAsync(data, notification, cookies)
+    // return createWaUserAsync(data, notification, cookies)
   })
 }
 
@@ -236,7 +238,7 @@ function postMessageAsync(data, notification, cookies, conversationId, retryTime
   // console.log('message param', JSON.stringify(notification.message_data))
   // console.log(rowHistory(data.transaction_id, notification,message.messages[0].id,true,null))
 
-  messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
+  /* messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
     console.log('=== messagePosted ===',JSON.stringify(message))
     createHistory(rowHistory(data.transaction_id, notification,message.messages[0].id,true,null))
   }, function(err) {
@@ -254,7 +256,7 @@ function postMessageAsync(data, notification, cookies, conversationId, retryTime
         createHistory(rowHistory(data.transaction_id, notification,null,false,'sunco client has not active'))
       }
     }
-  })
+  }) */
 }
 
 function createHistory(param){

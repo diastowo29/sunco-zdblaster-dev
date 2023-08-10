@@ -15,7 +15,8 @@ async function startSchedule () {
             transactionId: trxId
         }
     }).then(async function(job) {
-        console.log('get job', job[0].id)
-        await workQueue.add({transaction: job[0].transactionId});
+        if (job.length > 0) {
+            await workQueue.add({transaction: job[0].transactionId});
+        }
     })
 }
