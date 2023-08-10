@@ -26,7 +26,6 @@ scheduleDate.setHours(scheduleDate.getHours(),0,0)
 var q = scheduleDate.toISOString().split('T')[0]
 console.log('query',q, 'at',scheduleDate.getHours(), 'UTC time')
 
-var excludeNumber = []
 let maxJob = 2;
 let workers = maxJob;
 let maxJobsPerWorker = maxJob;
@@ -57,6 +56,7 @@ function runSchedule(jobQueue){
         transactionId: jobQueue.data.transaction
       }
     }).then(function(histories) {
+      let excludeNumber = []
       histories.forEach(history => {
         excludeNumber.push(history.phoneNumber);
       });
@@ -80,13 +80,13 @@ function runSchedule(jobQueue){
             },
             cookies: JSON.parse(job[0].cookies)
         }
-        asyncBlast(param.data, param.cookies, jobQueue, testvar);
+        asyncBlast(param.data, param.cookies, jobQueue, excludeNumber);
       })
     })
     
 }
 
-async function asyncBlast(body, cookies, job, testvar){
+async function asyncBlast(body, cookies, job, excludeNumber){
     console.log('=======asyncBlast()===============')
     var notifications = body.notifications
     var data = {
@@ -110,13 +110,13 @@ async function asyncBlast(body, cookies, job, testvar){
       for(var x = startArray; x < arrChunk[i].length; x++){
       console.log('chunk ', (i)*chunkSize)
       console.log('index' , x);
+      console.log('excluded number', excludeNumber.length)
+      console.log('job id', job.id)
       console.log((memoryUsage().heapUsed)/1024/1024);
-      console.log('row job', testvar);
         if (arrChunk[i][x] !== undefined) {
-          // if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
-            // console.log(JSON.stringify(data))
+          if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
             await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
-          // }
+          }
         }
       }
       startArray = 0;
@@ -144,7 +144,7 @@ function getUserAsync(data, notification, cookies, index){
       // return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
     }
   }, function(error) {
-    console.error('get conversations error', JSON.stringify(error))
+    console.error('//// get conversations error:', error.status)
     // return createWaUserAsync(data, notification, cookies)
   })
 }
@@ -173,7 +173,7 @@ function createConversationAsync(data, notification, cookies, createConvParam){
     }
     createClientAsync(data, notification, cookies, createClientParam)
   }, function(error) {
-    console.error('create conversation error',JSON.stringify(error))
+    console.error('//// create conversation error',error.status)
     createHistory(rowHistory(data.transaction_id, notification,null,false,'create sunco conversation failed'))
   })
 }
@@ -210,7 +210,7 @@ function createWaUserAsync(data, notification, cookies){
 
     createConversationAsync(data, notification, cookies, createConvParam)
   }, function(error) {
-    console.error('create user error', JSON.stringify(error))
+    console.error('//// create user error', error.status)
     createHistory(rowHistory(data.transaction_id, notification,null,false,'create sunco user failed'))
   })
 }
@@ -225,7 +225,7 @@ function createClientAsync(data, notification, cookies, param){
     console.log('client created' + JSON.stringify(client))
     postMessageAsync(data, notification, cookies, param.target.conversationId, 0)
   }, function(error) {
-    console.error('create client error', JSON.stringify(error))
+    console.error('//// create client error', error.status)
     createHistory(rowHistory(data.transaction_id, notification,null,false,'create sunco client failed'))
   })
 }
@@ -235,8 +235,6 @@ function postMessageAsync(data, notification, cookies, conversationId, retryTime
     console.log('postMessageAsync()');
   console.log('postMessageAsync()',retryTime)
   var appId = cookies.app_id
-  // console.log('message param', JSON.stringify(notification.message_data))
-  // console.log(rowHistory(data.transaction_id, notification,message.messages[0].id,true,null))
 
   /* messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
     console.log('=== messagePosted ===',JSON.stringify(message))
