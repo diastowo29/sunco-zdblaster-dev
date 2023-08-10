@@ -87,7 +87,7 @@ function runSchedule(jobQueue){
 }
 
 async function asyncBlast(body, cookies, job, excludeNumber){
-    console.log('=======asyncBlast()===============')
+    console.log('======= Start Blast ==========')
     var notifications = body.notifications
     var data = {
         app_id: body.app_id,
