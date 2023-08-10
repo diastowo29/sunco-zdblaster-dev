@@ -108,14 +108,13 @@ async function asyncBlast(body, cookies, job, excludeNumber){
 
     for (let i = startChunk; i < arrChunk.length; i++) {
       for(var x = startArray; x < arrChunk[i].length; x++){
-      console.log('chunk ', (i)*chunkSize)
-      console.log('index' , x);
-      console.log('excluded number', excludeNumber.length)
-      console.log('job id', job.id)
+      console.log('chunk', (i)*chunkSize, 'index', x)
       console.log((memoryUsage().heapUsed)/1024/1024);
         if (arrChunk[i][x] !== undefined) {
           if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
             await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
+          } else {
+            console.log(`this phone number: ${arrChunk[i][x].metadata.user_phone} already blasted`)
           }
         }
       }
@@ -139,13 +138,13 @@ function getUserAsync(data, notification, cookies, index){
           subscribeSDKClient: false
         }]
       }
-      // return createConversationAsync(data, notification, cookies, createConvParam)
+      return createConversationAsync(data, notification, cookies, createConvParam)
     } else {
-      // return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
+      return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
     }
   }, function(error) {
     console.error('//// get conversations error:', error.status)
-    // return createWaUserAsync(data, notification, cookies)
+    return createWaUserAsync(data, notification, cookies)
   })
 }
 
@@ -236,7 +235,7 @@ function postMessageAsync(data, notification, cookies, conversationId, retryTime
   console.log('postMessageAsync()',retryTime)
   var appId = cookies.app_id
 
-  /* messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
+  messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
     console.log('=== messagePosted ===',JSON.stringify(message))
     createHistory(rowHistory(data.transaction_id, notification,message.messages[0].id,true,null))
   }, function(err) {
@@ -254,7 +253,7 @@ function postMessageAsync(data, notification, cookies, conversationId, retryTime
         createHistory(rowHistory(data.transaction_id, notification,null,false,'sunco client has not active'))
       }
     }
-  }) */
+  })
 }
 
 function createHistory(param){
