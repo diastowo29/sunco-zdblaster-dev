@@ -10,21 +10,21 @@ var clientApiInstance = new SunshineConversationsClient.ClientsApi()
 var userApiInstance = new SunshineConversationsClient.UsersApi()
 var userCreateBody = new SunshineConversationsClient.UserCreateBody()
 var messageApiInstance = new SunshineConversationsClient.MessagesApi()
+const v8 = require('v8');
+
 
 const { memoryUsage } = require('node:process');
 
 const db = require("./models");
 const History = db.histories;
 const Job = db.job;
-
-
 var chunk = require('chunk')
 let chunkSize = 50
 
-var scheduleDate = new Date()
-scheduleDate.setHours(scheduleDate.getHours(),0,0)
-var q = scheduleDate.toISOString().split('T')[0]
-console.log('query',q, 'at',scheduleDate.getHours(), 'UTC time')
+// var scheduleDate = new Date()
+// scheduleDate.setHours(scheduleDate.getHours(),0,0)
+// var q = scheduleDate.toISOString().split('T')[0]
+// console.log('query',q, 'at',scheduleDate.getHours(), 'UTC time')
 
 let maxJob = 2;
 let workers = maxJob;
@@ -34,6 +34,8 @@ let throng = require('throng');
 let Queue = require("bull");
 let REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 
+let DEV_MODE = true;
+
 function start() {
   // Connect to the named work queue
   let workQueue = new Queue('doBlast', REDIS_URL);
@@ -42,6 +44,11 @@ function start() {
     console.log('get new job')
     excludeNumber = [];
     runSchedule(job);
+    // const array = [];
+
+    // while (true) {
+    //     array.push(new Array(1000000)); // Allocating a large array
+    // }
   });
 }
 
@@ -66,27 +73,26 @@ function runSchedule(jobQueue){
           transactionId: jobQueue.data.transaction
         }
       }).then(function(job) {
-        var testvar = job[0].id
         var param = {
-            data:{
-                row_id: job[0].id,
-                app_id: job[0].appId,
-                channel_id: job[0].channelId,
-                zd_agent: job[0].zdAgent,
-                transaction_id: job[0].transactionId,
-                user_count: job[0].userCount,
-                channel_name: job[0].channelName,
-                notifications: JSON.parse(job[0].jobs)
-            },
-            cookies: JSON.parse(job[0].cookies)
+          data:{
+            row_id: job[0].id,
+            app_id: job[0].appId,
+            channel_id: job[0].channelId,
+            zd_agent: job[0].zdAgent,
+            transaction_id: job[0].transactionId,
+            user_count: job[0].userCount,
+            channel_name: job[0].channelName,
+            notifications: JSON.parse(job[0].jobs)
+          },
+          cookies: JSON.parse(job[0].cookies)
         }
-        asyncBlast(param.data, param.cookies, jobQueue, excludeNumber);
+        asyncBlast(param.data, param.cookies, excludeNumber);
       })
     })
     
 }
 
-async function asyncBlast(body, cookies, job, excludeNumber){
+async function asyncBlast(body, cookies, excludeNumber){
     console.log('======= Start Blast ==========')
     var notifications = body.notifications
     var data = {
@@ -108,8 +114,12 @@ async function asyncBlast(body, cookies, job, excludeNumber){
 
     for (let i = startChunk; i < arrChunk.length; i++) {
       for(var x = startArray; x < arrChunk[i].length; x++){
+        const heapStatistics = v8.getHeapStatistics();
       console.log('chunk', (i)*chunkSize, 'index', x)
-      console.log((memoryUsage().heapUsed)/1024/1024);
+      console.log('rss', (memoryUsage().rss)/1024/1024);
+      console.log('total', (memoryUsage().heapTotal)/1024/1024);
+      console.log('used', (memoryUsage().heapUsed)/1024/1024);
+      console.log('Heap Size Limit: ', heapStatistics.heap_size_limit / 1024 / 1024, 'MB');
         if (arrChunk[i][x] !== undefined) {
           if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
             await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
@@ -138,13 +148,19 @@ function getUserAsync(data, notification, cookies, index){
           subscribeSDKClient: false
         }]
       }
-      return createConversationAsync(data, notification, cookies, createConvParam)
+      if (!DEV_MODE) {
+        return createConversationAsync(data, notification, cookies, createConvParam)
+      }
     } else {
-      return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
+      if (!DEV_MODE) {
+        return postMessageAsync(data, notification, cookies, list.conversations[0].id, 0)
+      }
     }
   }, function(error) {
     console.error('//// get conversations error:', error.status)
-    return createWaUserAsync(data, notification, cookies)
+    if (!DEV_MODE) {
+      return createWaUserAsync(data, notification, cookies)
+    }
   })
 }
 
@@ -231,29 +247,31 @@ function createClientAsync(data, notification, cookies, param){
 
 
 function postMessageAsync(data, notification, cookies, conversationId, retryTime){
-    console.log('postMessageAsync()');
+  console.log('postMessageAsync()');
   console.log('postMessageAsync()',retryTime)
   var appId = cookies.app_id
 
-  messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
-    console.log('=== messagePosted ===',JSON.stringify(message))
-    createHistory(rowHistory(data.transaction_id, notification,message.messages[0].id,true,null))
-  }, function(err) {
-    console.log(JSON.stringify(err))
-    var errorTitle = err.body.errors[0].title
-    if(errorTitle == "The integration exists but the participant does not have the specified client"){
-      removeUserAsync(data, notification,cookies)
-    }else{
-      if(retryTime<3){
-        setTimeout(function(){
-          retryTime = retryTime+1
-          postMessageAsync(data, notification, cookies, conversationId, retryTime) // DF --- masih perlu?
-        }, 5000)
+  if (!DEV_MODE) {
+    messageApiInstance.postMessage(appId, conversationId, notification).then(function(message) {
+      console.log('=== messagePosted ===',JSON.stringify(message))
+      createHistory(rowHistory(data.transaction_id, notification,message.messages[0].id,true,null))
+    }, function(err) {
+      console.log(JSON.stringify(err))
+      var errorTitle = err.body.errors[0].title
+      if(errorTitle == "The integration exists but the participant does not have the specified client"){
+        removeUserAsync(data, notification,cookies)
       }else{
-        createHistory(rowHistory(data.transaction_id, notification,null,false,'sunco client has not active'))
+        if(retryTime<3){
+          setTimeout(function(){
+            retryTime = retryTime+1
+            postMessageAsync(data, notification, cookies, conversationId, retryTime) // DF --- masih perlu?
+          }, 5000)
+        }else{
+          createHistory(rowHistory(data.transaction_id, notification,null,false,'sunco client has not active'))
+        }
       }
-    }
-  })
+    })
+  }
 }
 
 function createHistory(param){

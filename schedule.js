@@ -7,10 +7,17 @@ let workQueue = new Queue('doBlast', REDIS_URL);
 const db = require("./models");
 const Job = db.job;
 // const fs = require('fs');
+const v8 = require('v8');
+const initialStats = v8.getHeapStatistics();
+
+const totalHeapSizeThreshold = initialStats.heap_size_limit * 85 / 100;
+console.log("totalHeapSizeThreshold: " + totalHeapSizeThreshold);
 startSchedule()
+
 
 async function startSchedule () {
     let trxId = process.argv[2]
+
     return Job.findAll({
         where: {
             transactionId: trxId
@@ -18,6 +25,9 @@ async function startSchedule () {
     }).then(async function(job) {
         if (job.length > 0) {
             await workQueue.add({transaction: job[0].transactionId});
+        } else {
+            console.log(process.env.DATABASE_URL)
+            console.log('job not found', job)
         }
     })
 }
