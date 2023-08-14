@@ -1,36 +1,96 @@
 let Queue = require('bull');
 let REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
-
-let workQueue = new Queue('doBlast', REDIS_URL);
-// const { memoryUsage } = require('node:process');
-
+let workQueue = new Queue('doBlast', {
+    redis: REDIS_URL,
+    /* settings: {
+        maxStalledCount: 0
+    } */
+});
 const db = require("./models");
 const Job = db.job;
-// const fs = require('fs');
-const v8 = require('v8');
-const initialStats = v8.getHeapStatistics();
 
-const totalHeapSizeThreshold = initialStats.heap_size_limit * 85 / 100;
-console.log("totalHeapSizeThreshold: " + totalHeapSizeThreshold);
 startSchedule()
-
 
 async function startSchedule () {
     let trxId = process.argv[2]
+    // console.log(workQueue.getJobs())
 
-    return Job.findAll({
+    Job.findAll({
         where: {
             transactionId: trxId
         }
     }).then(async function(job) {
         if (job.length > 0) {
-            await workQueue.add({transaction: job[0].transactionId});
+            workQueue.add({transaction: job[0].transactionId})
         } else {
-            console.log(process.env.DATABASE_URL)
             console.log('job not found', job)
         }
     })
 }
+
+// workQueue.on('global:error', function (error) {
+//     console.log('error')
+//     console.log(error)
+// })
+
+// workQueue.on('waiting', function (jobId) {
+//     console.log('waiting')
+//     console.log(jobId)
+// });
+
+// workQueue.on('active', function (job, jobPromise) {
+//     console.log('active')
+//     console.log(job)
+// })
+
+// workQueue.on('global:stalled', function (job) {
+//     console.log('stalled')
+//     console.log(job)
+// })
+
+// workQueue.on('global:lock-extension-failed', function (job, err) {
+//     console.log('lock-extension-failed')
+//     console.log(job)
+// });
+
+// workQueue.on('global:progress', function (job, progress) {
+//     console.log('progress')
+//     console.log(job)
+// })
+
+// workQueue.on('completed', function (job, result) {
+//     console.log('completed')
+//     console.log(job)
+// })
+
+// workQueue.on('global:failed', function (job, err) {
+//     console.log('failed')
+//     console.log(job)
+// })
+
+// workQueue.on('global:paused', function () {
+//     console.log('paused')
+// })
+
+// workQueue.on('global:resumed', function (job) {
+//     console.log('resumed')
+//     console.log(job)
+// })
+
+// workQueue.on('cleaned', function (jobs, type) {
+//     console.log('cleaned')
+//     console.log(jobs)
+// });
+
+// workQueue.on('global:drained', function () {
+//     console.log('drained')
+// });
+
+// workQueue.on('global:removed', function (job) {
+//     console.log('removed')
+//     console.log(job)
+// });
+
 
 /* function generateRandomPhoneNumber() {
     const digits = '0123456789';

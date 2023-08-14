@@ -26,7 +26,7 @@ let chunkSize = 50
 // var q = scheduleDate.toISOString().split('T')[0]
 // console.log('query',q, 'at',scheduleDate.getHours(), 'UTC time')
 
-let maxJob = 2;
+let maxJob = 1;
 let workers = maxJob;
 let maxJobsPerWorker = maxJob;
 
@@ -38,14 +38,19 @@ let DEV_MODE = true;
 
 function start() {
   // Connect to the named work queue
-  let workQueue = new Queue('doBlast', REDIS_URL);
-
-  workQueue.process(maxJobsPerWorker, async (job) => {
+  let workQueue = new Queue('doBlast', {
+      redis: REDIS_URL,
+      settings: {
+          maxStalledCount: 0
+      }
+  });
+  workQueue.process(maxJobsPerWorker, async (job, done) => {
     console.log('get new job')
     excludeNumber = [];
-    runSchedule(job);
-    // const array = [];
+    runSchedule(job, done);
 
+    /* CREATE ERROR HEAP SIZE LIMIT */
+    // const array = [];
     // while (true) {
     //     array.push(new Array(1000000)); // Allocating a large array
     // }
@@ -56,7 +61,7 @@ function start() {
 // See: https://devcenter.heroku.com/articles/node-concurrency for more info
 throng({ workers, start });
 
-function runSchedule(jobQueue){
+function runSchedule(jobQueue, done){
     console.log('runSchedule()')
     History.findAll({
       where: {
@@ -86,13 +91,13 @@ function runSchedule(jobQueue){
           },
           cookies: JSON.parse(job[0].cookies)
         }
-        asyncBlast(param.data, param.cookies, excludeNumber);
+        asyncBlast(param.data, param.cookies, excludeNumber, jobQueue, done);
       })
     })
     
 }
 
-async function asyncBlast(body, cookies, excludeNumber){
+async function asyncBlast(body, cookies, excludeNumber, jobQueue, done){
     console.log('======= Start Blast ==========')
     var notifications = body.notifications
     var data = {
@@ -115,11 +120,17 @@ async function asyncBlast(body, cookies, excludeNumber){
     for (let i = startChunk; i < arrChunk.length; i++) {
       for(var x = startArray; x < arrChunk[i].length; x++){
         const heapStatistics = v8.getHeapStatistics();
-      console.log('chunk', (i)*chunkSize, 'index', x)
-      console.log('rss', (memoryUsage().rss)/1024/1024);
-      console.log('total', (memoryUsage().heapTotal)/1024/1024);
-      console.log('used', (memoryUsage().heapUsed)/1024/1024);
-      console.log('Heap Size Limit: ', heapStatistics.heap_size_limit / 1024 / 1024, 'MB');
+        const heapThreshold = (heapStatistics.heap_size_limit / 1024 / 1024)*70/100;
+        let rss = (memoryUsage().rss)/1024/1024
+        console.log('chunk', (i)*chunkSize, 'index', x, 'job id: ', jobQueue.id)
+        console.log('memUsage RSS', rss);
+        console.log('memUsage heapUsed', (memoryUsage().heapUsed)/1024/1024);
+        console.log('Heap Size Limit:', heapStatistics.heap_size_limit / 1024 / 1024, 'MB');
+        console.log('Total Heap Size:', heapStatistics.total_heap_size / 1024 / 1024, 'MB');
+        console.log('Heap Threshold:', heapThreshold, 'MB');
+        if (rss > heapThreshold) {
+          console.log('DANGER')
+        }
         if (arrChunk[i][x] !== undefined) {
           if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
             await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
@@ -127,9 +138,13 @@ async function asyncBlast(body, cookies, excludeNumber){
             console.log(`this phone number: ${arrChunk[i][x].metadata.user_phone} already blasted`)
           }
         }
+        console.log('progress', (((i)*chunkSize)+x))
+        jobQueue.progress(((i)*chunkSize)+x)
       }
       startArray = 0;
     }
+    console.log('job done')
+    done('job done');
 }
 
 function getUserAsync(data, notification, cookies, index){
