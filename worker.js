@@ -15,9 +15,9 @@ const v8 = require('v8');
 
 const { memoryUsage } = require('node:process');
 
-const db = require("./models");
-const History = db.histories;
-const Job = db.job;
+const db = require("./models"); // GANTI
+const History = db.histories; // GANTI
+const Job = db.job; // GANTI
 var chunk = require('chunk')
 let chunkSize = 50
 
@@ -45,7 +45,7 @@ function start() {
     excludeNumber = [];
     runSchedule(job);
     // const array = [];
-
+  
     // while (true) {
     //     array.push(new Array(1000000)); // Allocating a large array
     // }
@@ -57,39 +57,38 @@ function start() {
 throng({ workers, start });
 
 function runSchedule(jobQueue){
-    console.log('runSchedule()')
-    History.findAll({
+  console.log('runSchedule()')
+  History.findAll({
+    where: {
+      transactionId: jobQueue.data.transaction
+    }
+  }).then(function(histories) {
+    let excludeNumber = []
+    histories.forEach(history => {
+      excludeNumber.push(history.phoneNumber);
+    });
+
+    Job.findAll({
       where: {
         transactionId: jobQueue.data.transaction
       }
-    }).then(function(histories) {
-      let excludeNumber = []
-      histories.forEach(history => {
-        excludeNumber.push(history.phoneNumber);
-      });
-
-      Job.findAll({
-        where: {
-          transactionId: jobQueue.data.transaction
-        }
-      }).then(function(job) {
-        var param = {
-          data:{
-            row_id: job[0].id,
-            app_id: job[0].appId,
-            channel_id: job[0].channelId,
-            zd_agent: job[0].zdAgent,
-            transaction_id: job[0].transactionId,
-            user_count: job[0].userCount,
-            channel_name: job[0].channelName,
-            notifications: JSON.parse(job[0].jobs)
-          },
-          cookies: JSON.parse(job[0].cookies)
-        }
-        asyncBlast(param.data, param.cookies, excludeNumber);
-      })
+    }).then(function(job) {
+      var param = {
+        data:{
+          row_id: job[0].id,
+          app_id: job[0].appId,
+          channel_id: job[0].channelId,
+          zd_agent: job[0].zdAgent,
+          transaction_id: job[0].transactionId,
+          user_count: job[0].userCount,
+          channel_name: job[0].channelName,
+          notifications: JSON.parse(job[0].jobs)
+        },
+        cookies: JSON.parse(job[0].cookies)
+      }
+      asyncBlast(param.data, param.cookies, excludeNumber);
     })
-    
+  })
 }
 
 async function asyncBlast(body, cookies, excludeNumber){
@@ -115,11 +114,11 @@ async function asyncBlast(body, cookies, excludeNumber){
     for (let i = startChunk; i < arrChunk.length; i++) {
       for(var x = startArray; x < arrChunk[i].length; x++){
         const heapStatistics = v8.getHeapStatistics();
-      console.log('chunk', (i)*chunkSize, 'index', x)
-      console.log('rss', (memoryUsage().rss)/1024/1024);
-      console.log('total', (memoryUsage().heapTotal)/1024/1024);
-      console.log('used', (memoryUsage().heapUsed)/1024/1024);
-      console.log('Heap Size Limit: ', heapStatistics.heap_size_limit / 1024 / 1024, 'MB');
+        console.log('chunk', (i)*chunkSize, 'index', x)
+        console.log('rss', (memoryUsage().rss)/1024/1024);
+        console.log('total', (memoryUsage().heapTotal)/1024/1024);
+        console.log('used', (memoryUsage().heapUsed)/1024/1024);
+        console.log('Heap Size Limit: ', heapStatistics.heap_size_limit / 1024 / 1024, 'MB');
         if (arrChunk[i][x] !== undefined) {
           if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
             await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
@@ -331,7 +330,8 @@ function winstonLog(level, fun, process, message, data){
 }
 
 function rowHistory(transactionId, notification, messageId, isSuccess, failDetail){
-  var row
+  var row;
+  // GANTI KEY OBJECTNYA
   if(isSuccess) {
     row = {
       transactionId: transactionId,
