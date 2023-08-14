@@ -15,9 +15,9 @@ const v8 = require('v8');
 
 const { memoryUsage } = require('node:process');
 
-const db = require("./models");
-const History = db.histories;
-const Job = db.job;
+const db = require("./models"); // GANTI
+const History = db.histories; // GANTI
+const Job = db.job; // GANTI
 var chunk = require('chunk')
 let chunkSize = 50
 
@@ -47,10 +47,16 @@ function start() {
   workQueue.process(maxJobsPerWorker, async (job, done) => {
     console.log('get new job')
     excludeNumber = [];
+<<<<<<< HEAD
     runSchedule(job, done);
 
     /* CREATE ERROR HEAP SIZE LIMIT */
     // const array = [];
+=======
+    runSchedule(job);
+    // const array = [];
+  
+>>>>>>> 90aef3a21c5a3581a78c1e4b45094561f46b78a5
     // while (true) {
     //     array.push(new Array(1000000)); // Allocating a large array
     // }
@@ -61,6 +67,7 @@ function start() {
 // See: https://devcenter.heroku.com/articles/node-concurrency for more info
 throng({ workers, start });
 
+<<<<<<< HEAD
 function runSchedule(jobQueue, done){
     console.log('runSchedule()')
     History.findAll({
@@ -93,8 +100,41 @@ function runSchedule(jobQueue, done){
         }
         asyncBlast(param.data, param.cookies, excludeNumber, jobQueue, done);
       })
+=======
+function runSchedule(jobQueue){
+  console.log('runSchedule()')
+  History.findAll({
+    where: {
+      transactionId: jobQueue.data.transaction
+    }
+  }).then(function(histories) {
+    let excludeNumber = []
+    histories.forEach(history => {
+      excludeNumber.push(history.phoneNumber);
+    });
+
+    Job.findAll({
+      where: {
+        transactionId: jobQueue.data.transaction
+      }
+    }).then(function(job) {
+      var param = {
+        data:{
+          row_id: job[0].id,
+          app_id: job[0].appId,
+          channel_id: job[0].channelId,
+          zd_agent: job[0].zdAgent,
+          transaction_id: job[0].transactionId,
+          user_count: job[0].userCount,
+          channel_name: job[0].channelName,
+          notifications: JSON.parse(job[0].jobs)
+        },
+        cookies: JSON.parse(job[0].cookies)
+      }
+      asyncBlast(param.data, param.cookies, excludeNumber);
+>>>>>>> 90aef3a21c5a3581a78c1e4b45094561f46b78a5
     })
-    
+  })
 }
 
 async function asyncBlast(body, cookies, excludeNumber, jobQueue, done){
@@ -120,6 +160,7 @@ async function asyncBlast(body, cookies, excludeNumber, jobQueue, done){
     for (let i = startChunk; i < arrChunk.length; i++) {
       for(var x = startArray; x < arrChunk[i].length; x++){
         const heapStatistics = v8.getHeapStatistics();
+<<<<<<< HEAD
         const heapThreshold = (heapStatistics.heap_size_limit / 1024 / 1024)*70/100;
         let rss = (memoryUsage().rss)/1024/1024
         console.log('chunk', (i)*chunkSize, 'index', x, 'job id: ', jobQueue.id)
@@ -131,6 +172,13 @@ async function asyncBlast(body, cookies, excludeNumber, jobQueue, done){
         if (rss > heapThreshold) {
           console.log('DANGER')
         }
+=======
+        console.log('chunk', (i)*chunkSize, 'index', x)
+        console.log('rss', (memoryUsage().rss)/1024/1024);
+        console.log('total', (memoryUsage().heapTotal)/1024/1024);
+        console.log('used', (memoryUsage().heapUsed)/1024/1024);
+        console.log('Heap Size Limit: ', heapStatistics.heap_size_limit / 1024 / 1024, 'MB');
+>>>>>>> 90aef3a21c5a3581a78c1e4b45094561f46b78a5
         if (arrChunk[i][x] !== undefined) {
           if (!excludeNumber.includes(arrChunk[i][x].metadata.user_phone)) {
             await retry(() => getUserAsync(data, arrChunk[i][x], cookies, x));
@@ -346,7 +394,8 @@ function winstonLog(level, fun, process, message, data){
 }
 
 function rowHistory(transactionId, notification, messageId, isSuccess, failDetail){
-  var row
+  var row;
+  // GANTI KEY OBJECTNYA
   if(isSuccess) {
     row = {
       transactionId: transactionId,
