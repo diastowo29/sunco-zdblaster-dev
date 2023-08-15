@@ -40,7 +40,7 @@ let DEV_MODE = true;
 
 function start() {
   // Connect to the named work queue
-  let workQueue = new Queue('job1', {
+  let workQueue = new Queue('job2', {
     redis: REDIS_URL,
     settings: {
       maxStalledCount: 0
