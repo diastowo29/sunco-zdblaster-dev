@@ -1,8 +1,6 @@
 let Queue = require('bull');
 let REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
-let workQueue = new Queue('blastWaJob', {
-    redis: REDIS_URL
-  });
+let workQueue = new Queue('blastWaJob', REDIS_URL);
 const db = require("./models");
 const Job = db.job;
 
