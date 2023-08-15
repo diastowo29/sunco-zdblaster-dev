@@ -41,10 +41,10 @@ let DEV_MODE = true;
 function start() {
   // Connect to the named work queue
   let workQueue = new Queue('doBlast', {
-      redis: REDIS_URL,
+      redis: REDIS_URL/* ,
       settings: {
           maxStalledCount: 0
-      }
+      } */
   });
   workQueue.process(maxJobsPerWorker, async (job, done) => {
     console.log('get new job')
