@@ -40,7 +40,7 @@ let DEV_MODE = true;
 
 function start() {
   // Connect to the named work queue
-  let workQueue = new Queue('newBlastJob', {
+  let workQueue = new Queue('blastWaJob', {
     redis: REDIS_URL,
     settings: {
       maxStalledCount: 0
