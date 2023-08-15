@@ -40,7 +40,7 @@ let DEV_MODE = true;
 
 function start() {
   // Connect to the named work queue
-  let workQueue = new Queue('job4', REDIS_URL);
+  let workQueue = new Queue('job4', {redis: REDIS_URL});
   // let workQueue = new Queue('doBlast', REDIS_URL);
   workQueue.process(maxJobsPerWorker, async (job, done) => {
     console.log('get new job')
