@@ -32,15 +32,16 @@ let workers = maxJob;
 let maxJobsPerWorker = maxJob;
 
 let throng = require('throng');
-let Queue = require("bull");
+// let Queue = require("bull");
 const { throws } = require('assert')
-let REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
+// let REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 
 let DEV_MODE = true;
 
 function start() {
   // Connect to the named work queue
-  let workQueue = new Queue('job4', {redis: REDIS_URL});
+  // let workQueue = new Queue('job4', {redis: REDIS_URL});
+  let workQueue = require('./config/redis.config')
   // let workQueue = new Queue('doBlast', REDIS_URL);
   workQueue.process(maxJobsPerWorker, async (job, done) => {
     console.log('get new job')
