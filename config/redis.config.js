@@ -5,8 +5,7 @@ var redis_url = require('url').parse(REDIS_URL)
 let workQueue = new Queue('job6', {redis: {
     port: redis_url.port,
     host: redis_url.hostname,
-    db: redis_url.db,
-    password: redis_url.password
+    db: redis_url.db
 }});
 
 

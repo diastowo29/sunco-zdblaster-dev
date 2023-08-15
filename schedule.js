@@ -1,8 +1,3 @@
-// let Queue = require('bull');
-let REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
-// let workQueue = new Queue('job4', REDIS_URL);
-
-
 let workQueue = require('./config/redis.config')
 const db = require("./models");
 const Job = db.job;
