@@ -21,7 +21,9 @@ async function startSchedule () {
         }
     }).then(async function(job) {
         if (job.length > 0) {
-            workQueue.add({transaction: job[0].transactionId})
+            console.log('job found')
+            let jobCreated = await workQueue.add({transaction: job[0].transactionId})
+            console.log(jobCreated)
         } else {
             console.log('job not found', job)
         }
