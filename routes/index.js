@@ -5,10 +5,7 @@ const History = db.histories;
 let Queue = require('bull');
 let REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 let workQueue = new Queue('doBlast', {
-  redis: REDIS_URL/* ,
-  settings: {
-      maxStalledCount: 0
-  } */
+  redis: REDIS_URL
 });
 const Op = db.Sequelize.Op;
 
@@ -74,8 +71,11 @@ workQueue.on('global:completed', function (job, result) {
   console.log('completed', job)
 })
 
-workQueue.on('global:failed', function (job, err) {
-  console.log('failed', job)
+workQueue.on('global:failed', function (jobId, err) {
+  console.log('failed', jobId)
+  workQueue.getJob(jobId).then(function(thisJob) {
+    //GET JOB ID and UPDATE TRANSACTION
+  })
 })
 
 workQueue.on('global:paused', function () {
